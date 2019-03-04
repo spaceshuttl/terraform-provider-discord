@@ -1,6 +1,7 @@
 .idea
 .terraform
 
+crash.log
 terraform.tfstate*
 
 terraform-provider-discord

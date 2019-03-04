@@ -67,11 +67,17 @@ func resourceDiscordGuildEmojiCreate(d *schema.ResourceData, meta interface{}) e
 		return ErrClientNotConfigured
 	}
 
+	var roles []string
+
+	for _, role := range d.Get("roles").([]interface{}) {
+		roles = append(roles, role.(string))
+	}
+
 	emoji, err := s.GuildEmojiCreate(
 		d.Get("guild_id").(string),
 		d.Get("name").(string),
 		d.Get("image").(string),
-		d.Get("roles").([]string),
+		roles,
 	)
 	if err != nil {
 		return err
@@ -96,7 +102,7 @@ func resourceDiscordGuildEmojiRead(d *schema.ResourceData, meta interface{}) err
 	// TODO(tobbbles): Contribute back to upstream discordgo and use library function
 	resp, err := s.RequestWithBucketID(
 		http.MethodGet,
-		fmt.Sprint("%sguilds/%s/emojis/%s", discordgo.EndpointAPI, guild, d.Id()),
+		fmt.Sprintf("%sguilds/%s/emojis/%s", discordgo.EndpointAPI, guild, d.Id()),
 		nil,
 		discordgo.EndpointGuildRoles(guild),
 	)
@@ -104,7 +110,7 @@ func resourceDiscordGuildEmojiRead(d *schema.ResourceData, meta interface{}) err
 		return err
 	}
 
-	var emoji *discordgo.Emoji
+	emoji := &discordgo.Emoji{}
 	if err := json.Unmarshal(resp, emoji); err != nil {
 		return err
 	}
