@@ -85,7 +85,7 @@ func resourceDiscordGuildChannelCreate(d *schema.ResourceData, meta interface{})
 
 	data := discordgo.GuildChannelCreateData{
 		Name:      d.Get("name").(string),
-		Type:      d.Get("type").(discordgo.ChannelType),
+		Type:      discordgo.ChannelType(d.Get("type").(int)),
 		Topic:     d.Get("topic").(string),
 		Bitrate:   d.Get("bitrate").(int),
 		UserLimit: d.Get("user_limit").(int),

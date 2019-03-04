@@ -31,6 +31,8 @@ func Provider() terraform.ResourceProvider {
 			"discord_guild_role":    resourceDiscordGuildRole(),
 			"discord_guild_emoji":   resourceDiscordGuildEmoji(),
 			"discord_guild_channel": resourceDiscordGuildChannel(),
+
+			"discord_channel_invite": resourceDiscordChannelInvite(),
 		},
 
 		ConfigureFunc: discordProviderConfigure,
