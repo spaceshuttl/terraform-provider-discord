@@ -1,3 +1,6 @@
 .idea
+.terraform
+
+terraform.tfstate*
 
 terraform-provider-discord
