@@ -3,6 +3,7 @@ package discord
 import (
 	"github.com/bwmarrin/discordgo"
 	"github.com/hashicorp/terraform/helper/schema"
+	"github.com/hashicorp/terraform/helper/validation"
 	"log"
 )
 
@@ -57,10 +58,33 @@ func resourceDiscordGuildChannel() *schema.Resource {
 			//"recipients": &schema.Schema{
 			//	Type: schema.TypeList,
 			//},
-			// TODO: Implement Permission Overwrites
-			//"permission_overwrites": &schema.Schema{
-			//	Type: schema.Type
-			//},
+			"permission_overwrites": &schema.Schema{
+				Type:     schema.TypeList,
+				Optional: true,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"id": &schema.Schema{
+							Type:     schema.TypeString,
+							Optional: false,
+						},
+						"type": &schema.Schema{
+							Type:         schema.TypeString,
+							Required:     true,
+							ValidateFunc: validation.StringInSlice([]string{"role", "member"}, false),
+						},
+						"allow": &schema.Schema{
+							Type:     schema.TypeInt,
+							Required: false,
+							Default:  0,
+						},
+						"deny": &schema.Schema{
+							Type:     schema.TypeInt,
+							Required: false,
+							Default:  0,
+						},
+					},
+				},
+			},
 			"user_limit": &schema.Schema{
 				Type:     schema.TypeInt,
 				Optional: true,
@@ -83,15 +107,31 @@ func resourceDiscordGuildChannelCreate(d *schema.ResourceData, meta interface{})
 		return ErrClientNotConfigured
 	}
 
+	var overwrites []*discordgo.PermissionOverwrite
+
+	if po, ok := d.GetOk("permission_overwrites"); ok {
+		permissionOverwrites := po.([]interface{})
+
+		for _, p := range permissionOverwrites {
+			overwrite := p.(map[string]interface{})
+			overwrites = append(overwrites, &discordgo.PermissionOverwrite{
+				ID:    overwrite["id"].(string),
+				Type:  overwrite["type"].(string),
+				Allow: overwrite["allow"].(int),
+				Deny:  overwrite["deny"].(int),
+			})
+		}
+	}
+
 	data := discordgo.GuildChannelCreateData{
-		Name:      d.Get("name").(string),
-		Type:      discordgo.ChannelType(d.Get("type").(int)),
-		Topic:     d.Get("topic").(string),
-		Bitrate:   d.Get("bitrate").(int),
-		UserLimit: d.Get("user_limit").(int),
-		ParentID:  d.Get("parent_id").(string),
-		NSFW:      d.Get("nsfw").(bool),
-		//PermissionOverwrites: nil,
+		Name:                 d.Get("name").(string),
+		Type:                 discordgo.ChannelType(d.Get("type").(int)),
+		Topic:                d.Get("topic").(string),
+		Bitrate:              d.Get("bitrate").(int),
+		UserLimit:            d.Get("user_limit").(int),
+		ParentID:             d.Get("parent_id").(string),
+		NSFW:                 d.Get("nsfw").(bool),
+		PermissionOverwrites: overwrites,
 	}
 
 	channel, err := s.GuildChannelCreateComplex(
