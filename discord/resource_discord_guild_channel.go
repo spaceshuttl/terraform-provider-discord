@@ -142,15 +142,8 @@ func resourceDiscordGuildChannelCreate(d *schema.ResourceData, meta interface{})
 	}
 
 	d.SetId(channel.ID)
-	d.Set("name", channel.Name)
-	d.Set("type", channel.Type)
-	d.Set("topic", channel.Topic)
-	d.Set("bitrate", channel.Bitrate)
-	d.Set("user_limit", channel.UserLimit)
-	d.Set("parent_id", channel.ParentID)
-	d.Set("nsfw", channel.NSFW)
 
-	return nil
+	return resourceDiscordGuildChannelRead(d, meta)
 }
 
 func resourceDiscordGuildChannelRead(d *schema.ResourceData, meta interface{}) error {
@@ -165,17 +158,54 @@ func resourceDiscordGuildChannelRead(d *schema.ResourceData, meta interface{}) e
 	}
 
 	d.SetId(channel.ID)
+	d.Set("name", channel.Name)
+	d.Set("type", channel.Type)
+	d.Set("topic", channel.Topic)
+	d.Set("bitrate", channel.Bitrate)
+	d.Set("user_limit", channel.UserLimit)
+	d.Set("parent_id", channel.ParentID)
+	d.Set("nsfw", channel.NSFW)
 
 	return nil
 }
 
 func resourceDiscordGuildChannelUpdate(d *schema.ResourceData, meta interface{}) error {
-	_, ok := meta.(*discordgo.Session)
+	s, ok := meta.(*discordgo.Session)
 	if !ok {
 		return ErrClientNotConfigured
 	}
 
-	return nil
+	var overwrites []*discordgo.PermissionOverwrite
+
+	if po, ok := d.GetOk("permission_overwrites"); ok {
+		permissionOverwrites := po.([]interface{})
+
+		for _, p := range permissionOverwrites {
+			overwrite := p.(map[string]interface{})
+			overwrites = append(overwrites, &discordgo.PermissionOverwrite{
+				ID:    overwrite["id"].(string),
+				Type:  overwrite["type"].(string),
+				Allow: overwrite["allow"].(int),
+				Deny:  overwrite["deny"].(int),
+			})
+		}
+	}
+
+	data := discordgo.ChannelEdit{
+		Name:                 d.Get("name").(string),
+		Topic:                d.Get("topic").(string),
+		NSFW:                 d.Get("nsfw").(bool),
+		Bitrate:              d.Get("bitrate").(int),
+		UserLimit:            d.Get("user_limit").(int),
+		PermissionOverwrites: overwrites,
+		ParentID:             d.Get("parent_id").(string),
+	}
+
+	if _, err := s.ChannelEditComplex(d.Id(), &data); err != nil {
+		return err
+	}
+
+	return resourceDiscordGuildChannelRead(d, meta)
 }
 
 func resourceDiscordGuildChannelDelete(d *schema.ResourceData, meta interface{}) error {

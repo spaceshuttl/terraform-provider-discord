@@ -94,7 +94,7 @@ func resourceDiscordGuildRoleCreate(d *schema.ResourceData, meta interface{}) er
 
 	d.SetId(role.ID)
 
-	return nil
+	return resourceDiscordGuildRoleRead(d, meta)
 }
 
 func resourceDiscordGuildRoleRead(d *schema.ResourceData, meta interface{}) error {
@@ -129,12 +129,19 @@ func resourceDiscordGuildRoleRead(d *schema.ResourceData, meta interface{}) erro
 }
 
 func resourceDiscordGuildRoleUpdate(d *schema.ResourceData, meta interface{}) error {
-	_, ok := meta.(*discordgo.Session)
+	s, ok := meta.(*discordgo.Session)
 	if !ok {
 		return ErrClientNotConfigured
 	}
 
-	return nil
+	_, err := s.GuildRoleEdit(
+		d.Get("guild_id").(string), d.Id(), d.Get("name").(string), d.Get("color").(int),
+		d.Get("hoist").(bool), d.Get("permissions").(int), d.Get("mention").(bool))
+	if err != nil {
+		return err
+	}
+
+	return resourceDiscordGuildRoleRead(d, meta)
 }
 
 func resourceDiscordGuildRoleDelete(d *schema.ResourceData, meta interface{}) error {
