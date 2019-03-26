@@ -1,5 +1,6 @@
 resource "discord_guild" "test" {
-  name = "Terraform Test"
+  name = "Discord as Code Test"
+  region = "us-central"
 }
 
 resource "discord_guild_emoji" "test_emoji" {
@@ -13,9 +14,15 @@ resource "discord_guild_role" "admin" {
   name = "Admin"
 }
 
+resource "discord_guild_channel" "test_category" {
+  guild_id = "${discord_guild.test.id}"
+  name = "Test Category"
+  type = 4
+}
+
 resource "discord_guild_channel" "test_channel" {
   guild_id = "${discord_guild.test.id}"
-  name = "Welcome"
+  name = "vlad-sucks"
   permission_overwrites = [
     {
       id = "${discord_guild_role.admin.id}"
@@ -23,6 +30,7 @@ resource "discord_guild_channel" "test_channel" {
       allow = 16384
     }
   ]
+  parent_id = "${discord_guild_channel.test_category.id}"
 }
 
 

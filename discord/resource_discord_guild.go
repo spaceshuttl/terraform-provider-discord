@@ -2,6 +2,7 @@ package discord
 
 import (
 	"encoding/json"
+	"fmt"
 	"github.com/bwmarrin/discordgo"
 	"github.com/hashicorp/terraform/helper/schema"
 	"github.com/hashicorp/terraform/helper/validation"
@@ -120,7 +121,7 @@ func resourceDiscordGuildCreate(d *schema.ResourceData, meta interface{}) error 
 
 	d.SetId(guild.ID)
 
-	return nil
+	return resourceDiscordGuildRead(d, meta)
 }
 
 // resourceDiscordGuildRead
@@ -134,6 +135,8 @@ func resourceDiscordGuildRead(d *schema.ResourceData, meta interface{}) error {
 	if err != nil {
 		return err
 	}
+
+	fmt.Println(g.AfkChannelID)
 
 	d.Set("name", g.Name)
 	d.Set("icon", g.Icon)
@@ -176,13 +179,27 @@ func resourceDiscordGuildUpdate(d *schema.ResourceData, meta interface{}) error 
 		vl = discordgo.VerificationLevelHigh
 	}
 
+	var afk_channel string
+	var afk_timeout int
+	if d.Get("afk_channel_id") != nil {
+		afk_channel = d.Get("afk_channel_id").(string)
+	} else {
+		afk_channel = ""
+	}
+
+	if d.Get("afk_timeout") != nil {
+		afk_timeout = d.Get("afk_timeout").(int)
+	} else {
+		afk_timeout = 0
+	}
+
 	data := discordgo.GuildParams{
 		Name:                        d.Get("name").(string),
 		Region:                      d.Get("region").(string),
 		VerificationLevel:           &vl,
 		DefaultMessageNotifications: d.Get("default_message_notifications").(int),
-		AfkChannelID:                d.Get("afk_channel_id").(string),
-		AfkTimeout:                  d.Get("afk_timeout").(int),
+		AfkChannelID:                afk_channel,
+		AfkTimeout:                  afk_timeout,
 		Icon:                        d.Get("icon").(string),
 		OwnerID:                     d.Get("owner_id").(string),
 		Splash:                      d.Get("splash").(string),
@@ -205,6 +222,6 @@ func resourceDiscordGuildDelete(d *schema.ResourceData, meta interface{}) error 
 
 	log.Printf("[DEBUG] Delete Discord guild %s", d.Id())
 
-	_, err := s.GuildDelete(d.Id())
+	_, err := s.RequestWithBucketID("DELETE", discordgo.EndpointGuild(d.Id()), nil, discordgo.EndpointGuild(d.Id()))
 	return err
 }
