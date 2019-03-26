@@ -1,7 +1,6 @@
 package discord
 
 import (
-	"encoding/json"
 	"github.com/bwmarrin/discordgo"
 	"github.com/hashicorp/terraform/helper/schema"
 )
@@ -72,14 +71,6 @@ func resourceDiscordGuildRoleCreate(d *schema.ResourceData, meta interface{}) er
 	}
 
 	guild := d.Get("guild_id").(string)
-
-	rc := &RoleCreate{
-		Name:        d.Get("name").(string),
-		Permissions: d.Get("permissions").(int),
-		Color:       d.Get("color").(int),
-		Hoist:       d.Get("hoist").(bool),
-		Mentionable: d.Get("mentionable").(bool),
-	}
 
 	role, err := s.GuildRoleCreate(guild)
 	if err != nil {
