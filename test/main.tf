@@ -29,7 +29,8 @@ resource "discord_guild_channel" "test_channel" {
 resource "discord_channel_invite" "test_invite" {
   channel_id = "${discord_guild_channel.test_channel.id}"
   unique = true
-  max_users = 1
+  max_users = 0
+  max_age = 0
 }
 
 output "invite" {

@@ -135,6 +135,6 @@ func resourceDiscordGuildRoleDelete(d *schema.ResourceData, meta interface{}) er
 
 	return s.GuildRoleDelete(
 		d.Get("guild_id").(string),
-		d.Get("id").(string),
+		d.Id(),
 	)
 }
