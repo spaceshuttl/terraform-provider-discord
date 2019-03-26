@@ -56,14 +56,6 @@ func resourceDiscordGuildRole() *schema.Resource {
 // Discord Guild CRUD Operations
 // =====================================================================================================================
 
-type RoleCreate struct {
-	Name        string `json:"name"`
-	Permissions int    `json:"permissions"`
-	Color       int    `json:"color"`
-	Hoist       bool   `json:"hoist"`
-	Mentionable bool   `json:"mentionable"`
-}
-
 func resourceDiscordGuildRoleCreate(d *schema.ResourceData, meta interface{}) error {
 	s, ok := meta.(*discordgo.Session)
 	if !ok {
@@ -78,7 +70,7 @@ func resourceDiscordGuildRoleCreate(d *schema.ResourceData, meta interface{}) er
 	}
 
 	role, err = s.GuildRoleEdit(guild, role.ID, d.Get("name").(string), d.Get("color").(int),
-		d.Get("hoist").(bool), d.Get("permissions").(int), d.Get("Mentionable").(bool))
+		d.Get("hoist").(bool), d.Get("permissions").(int), d.Get("mentionable").(bool))
 	if err != nil {
 		return err
 	}
