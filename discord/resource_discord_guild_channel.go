@@ -65,7 +65,7 @@ func resourceDiscordGuildChannel() *schema.Resource {
 					Schema: map[string]*schema.Schema{
 						"id": &schema.Schema{
 							Type:     schema.TypeString,
-							Optional: false,
+							Required: true,
 						},
 						"type": &schema.Schema{
 							Type:         schema.TypeString,
@@ -74,12 +74,12 @@ func resourceDiscordGuildChannel() *schema.Resource {
 						},
 						"allow": &schema.Schema{
 							Type:     schema.TypeInt,
-							Required: false,
+							Optional: true,
 							Default:  0,
 						},
 						"deny": &schema.Schema{
 							Type:     schema.TypeInt,
-							Required: false,
+							Optional: true,
 							Default:  0,
 						},
 					},
