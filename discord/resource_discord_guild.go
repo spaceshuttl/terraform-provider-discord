@@ -155,12 +155,45 @@ func resourceDiscordGuildRead(d *schema.ResourceData, meta interface{}) error {
 
 // resourceDiscordGuildUpdate
 func resourceDiscordGuildUpdate(d *schema.ResourceData, meta interface{}) error {
-	_, ok := meta.(*discordgo.Session)
+	s, ok := meta.(*discordgo.Session)
 	if !ok {
 		return ErrClientNotConfigured
 	}
 
-	return nil
+	var vl discordgo.VerificationLevel
+
+	switch d.Get("verification_level").(int) {
+	case 0:
+		vl = discordgo.VerificationLevelNone
+		break
+	case 1:
+		vl = discordgo.VerificationLevelLow
+		break
+	case 2:
+		vl = discordgo.VerificationLevelMedium
+		break
+	case 3:
+		vl = discordgo.VerificationLevelHigh
+	}
+
+	data := discordgo.GuildParams{
+		Name:                        d.Get("name").(string),
+		Region:                      d.Get("region").(string),
+		VerificationLevel:           &vl,
+		DefaultMessageNotifications: d.Get("default_message_notifications").(int),
+		AfkChannelID:                d.Get("afk_channel_id").(string),
+		AfkTimeout:                  d.Get("afk_timeout").(int),
+		Icon:                        d.Get("icon").(string),
+		OwnerID:                     d.Get("owner_id").(string),
+		Splash:                      d.Get("splash").(string),
+	}
+
+	_, err := s.GuildEdit(d.Id(), data)
+	if err != nil {
+		return err
+	}
+
+	return resourceDiscordGuildRead(d, meta)
 }
 
 // resourceDiscordGuildDelete
@@ -172,7 +205,6 @@ func resourceDiscordGuildDelete(d *schema.ResourceData, meta interface{}) error 
 
 	log.Printf("[DEBUG] Delete Discord guild %s", d.Id())
 
-
-	_, err := s.RequestWithBucketID("DELETE", discordgo.EndpointGuild(d.Id()), nil, discordgo.EndpointGuild(d.Id()))
+	_, err := s.GuildDelete(d.Id())
 	return err
 }
