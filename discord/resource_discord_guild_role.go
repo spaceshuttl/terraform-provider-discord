@@ -1,7 +1,6 @@
 package discord
 
 import (
-	"encoding/json"
 	"github.com/bwmarrin/discordgo"
 	"github.com/hashicorp/terraform/helper/schema"
 )
@@ -73,22 +72,14 @@ func resourceDiscordGuildRoleCreate(d *schema.ResourceData, meta interface{}) er
 
 	guild := d.Get("guild_id").(string)
 
-	rc := &RoleCreate{
-		Name:        d.Get("name").(string),
-		Permissions: d.Get("permissions").(int),
-		Color:       d.Get("color").(int),
-		Hoist:       d.Get("hoist").(bool),
-		Mentionable: d.Get("mentionable").(bool),
-	}
-
-	resp, err := s.RequestWithBucketID("POST", discordgo.EndpointGuildRoles(guild), rc, discordgo.EndpointGuildRoles(guild))
+	role, err := s.GuildRoleCreate(guild)
 	if err != nil {
 		return err
 	}
 
-	// Marshal results into schema
-	var role *discordgo.Role
-	if err := json.Unmarshal(resp, role); err != nil {
+	role, err = s.GuildRoleEdit(guild, role.ID, d.Get("name").(string), d.Get("color").(int),
+		d.Get("hoist").(bool), d.Get("permissions").(int), d.Get("Mentionable").(bool))
+	if err != nil {
 		return err
 	}
 
