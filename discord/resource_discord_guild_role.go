@@ -119,7 +119,7 @@ func resourceDiscordGuildRoleUpdate(d *schema.ResourceData, meta interface{}) er
 
 	_, err := s.GuildRoleEdit(
 		d.Get("guild_id").(string), d.Id(), d.Get("name").(string), d.Get("color").(int),
-		d.Get("hoist").(bool), d.Get("permissions").(int), d.Get("mention").(bool))
+		d.Get("hoist").(bool), d.Get("permissions").(int), d.Get("mentionable").(bool))
 	if err != nil {
 		return err
 	}

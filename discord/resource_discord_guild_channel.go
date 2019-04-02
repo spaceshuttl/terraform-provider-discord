@@ -165,6 +165,7 @@ func resourceDiscordGuildChannelRead(d *schema.ResourceData, meta interface{}) e
 	d.Set("user_limit", channel.UserLimit)
 	d.Set("parent_id", channel.ParentID)
 	d.Set("nsfw", channel.NSFW)
+	d.Set("position", channel.Position)
 
 	return nil
 }
@@ -203,6 +204,32 @@ func resourceDiscordGuildChannelUpdate(d *schema.ResourceData, meta interface{})
 
 	if _, err := s.ChannelEditComplex(d.Id(), &data); err != nil {
 		return err
+	}
+
+	if d.HasChange("position") {
+		var orderList []*discordgo.Channel
+		oldPosition, newPosition := d.GetChange("position")
+		channels, err := s.GuildChannels(d.Get("guild_id").(string))
+		if err != nil {
+			return err
+		}
+		for _, channel := range channels {
+			if channel.Type == discordgo.ChannelType(d.Get("type").(int)) && channel.Position == d.Get("position").(int) {
+				orderList = append(orderList, &discordgo.Channel{
+					ID:       channel.ID,
+					Position: oldPosition.(int),
+				})
+				orderList = append(orderList, &discordgo.Channel{
+					ID:       d.Id(),
+					Position: newPosition.(int),
+				})
+				break
+			}
+		}
+		err = s.GuildChannelsReorder(d.Get("guild_id").(string), orderList)
+		if err != nil {
+			return err
+		}
 	}
 
 	return resourceDiscordGuildChannelRead(d, meta)

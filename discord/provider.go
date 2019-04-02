@@ -27,11 +27,11 @@ func Provider() terraform.ResourceProvider {
 		//},
 
 		ResourcesMap: map[string]*schema.Resource{
-			"discord_guild":         resourceDiscordGuild(),
-			"discord_guild_role":    resourceDiscordGuildRole(),
-			"discord_guild_emoji":   resourceDiscordGuildEmoji(),
-			"discord_guild_channel": resourceDiscordGuildChannel(),
-
+			"discord_guild":          resourceDiscordGuild(),
+			"discord_guild_role":     resourceDiscordGuildRole(),
+			"discord_guild_emoji":    resourceDiscordGuildEmoji(),
+			"discord_guild_channel":  resourceDiscordGuildChannel(),
+			"discord_guild_member":   resourceDiscordGuildMember(),
 			"discord_channel_invite": resourceDiscordChannelInvite(),
 		},
 
