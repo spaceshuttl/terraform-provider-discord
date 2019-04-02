@@ -61,6 +61,49 @@ func resourceDiscordGuild() *schema.Resource {
 				ValidateFunc: validation.IntBetween(0, 2),
 				Optional:     true,
 			},
+			"afk_channel_id": &schema.Schema{
+				Type:        schema.TypeString,
+				Description: "ID of the voice AFK channel",
+				Computed:    true,
+				Optional:    true,
+			},
+			"embed_channel_id": &schema.Schema{
+				Type:        schema.TypeString,
+				Description: "ID of the channel welcome messages go to",
+				Computed:    true,
+				Optional:    true,
+			},
+			"owner_id": &schema.Schema{
+				Type:        schema.TypeString,
+				Description: "ID of the server owner",
+				Computed:    true,
+			},
+			"splash": &schema.Schema{
+				Type:        schema.TypeString,
+				Description: "Hash of the guild's splash",
+				Optional:    true,
+			},
+			"afk_timeout": &schema.Schema{
+				Type:        schema.TypeInt,
+				Description: "Timeout, in seconds, before a user is considered AFK",
+				Optional:    true,
+				Default:     300,
+			},
+			"member_count": &schema.Schema{
+				Type:        schema.TypeInt,
+				Description: "The number of members in the server",
+				Computed:    true,
+			},
+			"embed_enabled": &schema.Schema{
+				Type:        schema.TypeBool,
+				Description: "Whether the guild has embedding enabled.",
+				Computed:    true,
+			},
+			"large": &schema.Schema{
+				Type:        schema.TypeBool,
+				Description: "Whether the guild is considered large.",
+				Computed:    true,
+			},
 			//"roles": &schema.Schema{
 			//	Type:     schema.TypeList,
 			//	Elem:     resourceDiscordGuildRole(),
@@ -121,6 +164,12 @@ func resourceDiscordGuildCreate(d *schema.ResourceData, meta interface{}) error 
 
 	d.SetId(guild.ID)
 
+	// Lets clean up the default channels as they don't really make in this setup
+	channels, err := s.GuildChannels(guild.ID)
+	for i := 0; i < len(channels); i++ {
+		_, _ = s.ChannelDelete(channels[i].ID)
+	}
+
 	return resourceDiscordGuildRead(d, meta)
 }
 
@@ -179,27 +228,13 @@ func resourceDiscordGuildUpdate(d *schema.ResourceData, meta interface{}) error 
 		vl = discordgo.VerificationLevelHigh
 	}
 
-	var afk_channel string
-	var afk_timeout int
-	if d.Get("afk_channel_id") != nil {
-		afk_channel = d.Get("afk_channel_id").(string)
-	} else {
-		afk_channel = ""
-	}
-
-	if d.Get("afk_timeout") != nil {
-		afk_timeout = d.Get("afk_timeout").(int)
-	} else {
-		afk_timeout = 0
-	}
-
 	data := discordgo.GuildParams{
 		Name:                        d.Get("name").(string),
 		Region:                      d.Get("region").(string),
 		VerificationLevel:           &vl,
 		DefaultMessageNotifications: d.Get("default_message_notifications").(int),
-		AfkChannelID:                afk_channel,
-		AfkTimeout:                  afk_timeout,
+		AfkChannelID:                d.Get("afk_channel_id").(string),
+		AfkTimeout:                  d.Get("afk_timeout").(int),
 		Icon:                        d.Get("icon").(string),
 		OwnerID:                     d.Get("owner_id").(string),
 		Splash:                      d.Get("splash").(string),
