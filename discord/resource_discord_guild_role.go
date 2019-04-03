@@ -124,6 +124,33 @@ func resourceDiscordGuildRoleUpdate(d *schema.ResourceData, meta interface{}) er
 		return err
 	}
 
+	if d.HasChange("position") {
+		var orderList []*discordgo.Role
+		oldPosition, newPosition := d.GetChange("position")
+		roles, err := s.GuildRoles(d.Get("guild_id").(string))
+		if err != nil {
+			return err
+		}
+
+		for _, role := range roles {
+			if role.Position == newPosition {
+				orderList = append(orderList, &discordgo.Role{
+					ID:       role.ID,
+					Position: oldPosition.(int),
+				})
+				orderList = append(orderList, &discordgo.Role{
+					ID:       d.Id(),
+					Position: newPosition.(int),
+				})
+				break
+			}
+		}
+		_, err = s.GuildRoleReorder(d.Get("guild_id").(string), orderList)
+		if err != nil {
+			return err
+		}
+	}
+
 	return resourceDiscordGuildRoleRead(d, meta)
 }
 
