@@ -33,6 +33,7 @@ func Provider() terraform.ResourceProvider {
 			"discord_guild_channel":  resourceDiscordGuildChannel(),
 			"discord_guild_member":   resourceDiscordGuildMember(),
 			"discord_channel_invite": resourceDiscordChannelInvite(),
+			"discord_message":        resourceDiscordMessage(),
 		},
 
 		ConfigureFunc: discordProviderConfigure,
