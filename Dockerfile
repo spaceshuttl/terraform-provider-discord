@@ -6,5 +6,6 @@ COPY . .
 RUN make bin
 
 FROM hashicorp/terraform:light
-COPY --from=builder /go/src/github.com/spaceshuttl/terraform-provider-discord/terraform-provider-discord /usr/local/terraform-plugins/
+RUN mkdir -p /root/terraform.d/plugins/linux_amd64
+COPY --from=builder /go/src/github.com/spaceshuttl/terraform-provider-discord/terraform-provider-discord /root/terraform.d/plugins/linux_amd64/
 WORKDIR /opt/workspace
