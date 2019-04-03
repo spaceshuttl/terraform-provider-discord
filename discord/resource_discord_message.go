@@ -58,7 +58,7 @@ func resourceDiscordMessageRead(d *schema.ResourceData, meta interface{}) error 
 		return ErrClientNotConfigured
 	}
 
-	m, err := s.ChannelMessage(d.Get("channel_id").(string), d.Get("content").(string))
+	m, err := s.ChannelMessage(d.Get("channel_id").(string), d.Id())
 	if err != nil {
 		return err
 	}
