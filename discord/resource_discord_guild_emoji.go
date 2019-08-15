@@ -126,9 +126,20 @@ func resourceDiscordGuildEmojiRead(d *schema.ResourceData, meta interface{}) err
 }
 
 func resourceDiscordGuildEmojiUpdate(d *schema.ResourceData, meta interface{}) error {
-	_, ok := meta.(*discordgo.Session)
+	s, ok := meta.(*discordgo.Session)
 	if !ok {
 		return ErrClientNotConfigured
+	}
+
+	var roles []string
+
+	for _, role := range d.Get("roles").([]interface{}) {
+		roles = append(roles, role.(string))
+	}
+
+	_, err := s.GuildEmojiEdit(d.Get("guild_id").(string), d.Id(), d.Get("name").(string), roles)
+	if err != nil {
+		return err
 	}
 
 	return nil

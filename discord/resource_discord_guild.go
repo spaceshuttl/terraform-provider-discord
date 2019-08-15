@@ -2,6 +2,7 @@ package discord
 
 import (
 	"encoding/json"
+	"fmt"
 	"github.com/bwmarrin/discordgo"
 	"github.com/hashicorp/terraform/helper/schema"
 	"github.com/hashicorp/terraform/helper/validation"
@@ -59,6 +60,49 @@ func resourceDiscordGuild() *schema.Resource {
 				Default:      0,
 				ValidateFunc: validation.IntBetween(0, 2),
 				Optional:     true,
+			},
+			"afk_channel_id": &schema.Schema{
+				Type:        schema.TypeString,
+				Description: "ID of the voice AFK channel",
+				Computed:    true,
+				Optional:    true,
+			},
+			"embed_channel_id": &schema.Schema{
+				Type:        schema.TypeString,
+				Description: "ID of the channel welcome messages go to",
+				Computed:    true,
+				Optional:    true,
+			},
+			"owner_id": &schema.Schema{
+				Type:        schema.TypeString,
+				Description: "ID of the server owner",
+				Computed:    true,
+			},
+			"splash": &schema.Schema{
+				Type:        schema.TypeString,
+				Description: "Hash of the guild's splash",
+				Optional:    true,
+			},
+			"afk_timeout": &schema.Schema{
+				Type:        schema.TypeInt,
+				Description: "Timeout, in seconds, before a user is considered AFK",
+				Optional:    true,
+				Default:     300,
+			},
+			"member_count": &schema.Schema{
+				Type:        schema.TypeInt,
+				Description: "The number of members in the server",
+				Computed:    true,
+			},
+			"embed_enabled": &schema.Schema{
+				Type:        schema.TypeBool,
+				Description: "Whether the guild has embedding enabled.",
+				Computed:    true,
+			},
+			"large": &schema.Schema{
+				Type:        schema.TypeBool,
+				Description: "Whether the guild is considered large.",
+				Computed:    true,
 			},
 			//"roles": &schema.Schema{
 			//	Type:     schema.TypeList,
@@ -120,7 +164,13 @@ func resourceDiscordGuildCreate(d *schema.ResourceData, meta interface{}) error 
 
 	d.SetId(guild.ID)
 
-	return nil
+	// Lets clean up the default channels as they don't really make in this setup
+	channels, err := s.GuildChannels(guild.ID)
+	for i := 0; i < len(channels); i++ {
+		_, _ = s.ChannelDelete(channels[i].ID)
+	}
+
+	return resourceDiscordGuildRead(d, meta)
 }
 
 // resourceDiscordGuildRead
@@ -134,6 +184,8 @@ func resourceDiscordGuildRead(d *schema.ResourceData, meta interface{}) error {
 	if err != nil {
 		return err
 	}
+
+	fmt.Println(g.AfkChannelID)
 
 	d.Set("name", g.Name)
 	d.Set("icon", g.Icon)
@@ -155,12 +207,45 @@ func resourceDiscordGuildRead(d *schema.ResourceData, meta interface{}) error {
 
 // resourceDiscordGuildUpdate
 func resourceDiscordGuildUpdate(d *schema.ResourceData, meta interface{}) error {
-	_, ok := meta.(*discordgo.Session)
+	s, ok := meta.(*discordgo.Session)
 	if !ok {
 		return ErrClientNotConfigured
 	}
 
-	return nil
+	var vl discordgo.VerificationLevel
+
+	switch d.Get("verification_level").(int) {
+	case 0:
+		vl = discordgo.VerificationLevelNone
+		break
+	case 1:
+		vl = discordgo.VerificationLevelLow
+		break
+	case 2:
+		vl = discordgo.VerificationLevelMedium
+		break
+	case 3:
+		vl = discordgo.VerificationLevelHigh
+	}
+
+	data := discordgo.GuildParams{
+		Name:                        d.Get("name").(string),
+		Region:                      d.Get("region").(string),
+		VerificationLevel:           &vl,
+		DefaultMessageNotifications: d.Get("default_message_notifications").(int),
+		AfkChannelID:                d.Get("afk_channel_id").(string),
+		AfkTimeout:                  d.Get("afk_timeout").(int),
+		Icon:                        d.Get("icon").(string),
+		OwnerID:                     d.Get("owner_id").(string),
+		Splash:                      d.Get("splash").(string),
+	}
+
+	_, err := s.GuildEdit(d.Id(), data)
+	if err != nil {
+		return err
+	}
+
+	return resourceDiscordGuildRead(d, meta)
 }
 
 // resourceDiscordGuildDelete
@@ -171,7 +256,6 @@ func resourceDiscordGuildDelete(d *schema.ResourceData, meta interface{}) error 
 	}
 
 	log.Printf("[DEBUG] Delete Discord guild %s", d.Id())
-
 
 	_, err := s.RequestWithBucketID("DELETE", discordgo.EndpointGuild(d.Id()), nil, discordgo.EndpointGuild(d.Id()))
 	return err

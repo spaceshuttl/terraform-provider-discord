@@ -1,7 +1,6 @@
 package discord
 
 import (
-	"encoding/json"
 	"github.com/bwmarrin/discordgo"
 	"github.com/hashicorp/terraform/helper/schema"
 )
@@ -57,14 +56,6 @@ func resourceDiscordGuildRole() *schema.Resource {
 // Discord Guild CRUD Operations
 // =====================================================================================================================
 
-type RoleCreate struct {
-	Name        string `json:"name"`
-	Permissions int    `json:"permissions"`
-	Color       int    `json:"color"`
-	Hoist       bool   `json:"hoist"`
-	Mentionable bool   `json:"mentionable"`
-}
-
 func resourceDiscordGuildRoleCreate(d *schema.ResourceData, meta interface{}) error {
 	s, ok := meta.(*discordgo.Session)
 	if !ok {
@@ -73,28 +64,20 @@ func resourceDiscordGuildRoleCreate(d *schema.ResourceData, meta interface{}) er
 
 	guild := d.Get("guild_id").(string)
 
-	rc := &RoleCreate{
-		Name:        d.Get("name").(string),
-		Permissions: d.Get("permissions").(int),
-		Color:       d.Get("color").(int),
-		Hoist:       d.Get("hoist").(bool),
-		Mentionable: d.Get("mentionable").(bool),
-	}
-
-	resp, err := s.RequestWithBucketID("POST", discordgo.EndpointGuildRoles(guild), rc, discordgo.EndpointGuildRoles(guild))
+	role, err := s.GuildRoleCreate(guild)
 	if err != nil {
 		return err
 	}
 
-	// Marshal results into schema
-	var role *discordgo.Role
-	if err := json.Unmarshal(resp, role); err != nil {
+	role, err = s.GuildRoleEdit(guild, role.ID, d.Get("name").(string), d.Get("color").(int),
+		d.Get("hoist").(bool), d.Get("permissions").(int), d.Get("mentionable").(bool))
+	if err != nil {
 		return err
 	}
 
 	d.SetId(role.ID)
 
-	return nil
+	return resourceDiscordGuildRoleRead(d, meta)
 }
 
 func resourceDiscordGuildRoleRead(d *schema.ResourceData, meta interface{}) error {
@@ -129,12 +112,46 @@ func resourceDiscordGuildRoleRead(d *schema.ResourceData, meta interface{}) erro
 }
 
 func resourceDiscordGuildRoleUpdate(d *schema.ResourceData, meta interface{}) error {
-	_, ok := meta.(*discordgo.Session)
+	s, ok := meta.(*discordgo.Session)
 	if !ok {
 		return ErrClientNotConfigured
 	}
 
-	return nil
+	_, err := s.GuildRoleEdit(
+		d.Get("guild_id").(string), d.Id(), d.Get("name").(string), d.Get("color").(int),
+		d.Get("hoist").(bool), d.Get("permissions").(int), d.Get("mentionable").(bool))
+	if err != nil {
+		return err
+	}
+
+	if d.HasChange("position") {
+		var orderList []*discordgo.Role
+		oldPosition, newPosition := d.GetChange("position")
+		roles, err := s.GuildRoles(d.Get("guild_id").(string))
+		if err != nil {
+			return err
+		}
+
+		for _, role := range roles {
+			if role.Position == newPosition {
+				orderList = append(orderList, &discordgo.Role{
+					ID:       role.ID,
+					Position: oldPosition.(int),
+				})
+				orderList = append(orderList, &discordgo.Role{
+					ID:       d.Id(),
+					Position: newPosition.(int),
+				})
+				break
+			}
+		}
+		_, err = s.GuildRoleReorder(d.Get("guild_id").(string), orderList)
+		if err != nil {
+			return err
+		}
+	}
+
+	return resourceDiscordGuildRoleRead(d, meta)
 }
 
 func resourceDiscordGuildRoleDelete(d *schema.ResourceData, meta interface{}) error {
@@ -145,6 +162,6 @@ func resourceDiscordGuildRoleDelete(d *schema.ResourceData, meta interface{}) er
 
 	return s.GuildRoleDelete(
 		d.Get("guild_id").(string),
-		d.Get("id").(string),
+		d.Id(),
 	)
 }
