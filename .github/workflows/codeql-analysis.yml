@@ -17,12 +17,8 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        # Override automatic language detection by changing the below list
-        # Supported options are ['csharp', 'cpp', 'go', 'java', 'javascript', 'python']
         language: ['go']
-        go_version: [1.15, 1.14]
-        # Learn more...
-        # https://docs.github.com/en/github/finding-security-vulnerabilities-and-errors-in-your-code/configuring-code-scanning#overriding-automatic-language-detection
+        go_version: [1.18, 1.15, 1.14]
 
     steps:
     - name: Checkout repository
@@ -39,7 +35,7 @@ jobs:
 
     # Initializes the CodeQL tools for scanning.
     - name: Initialize CodeQL
-      uses: github/codeql-action/init@v1
+      uses: github/codeql-action/init@v2
       with:
         languages: ${{ matrix.language }}
         # If you wish to specify custom queries, you can do so here or in a config file.
@@ -50,13 +46,12 @@ jobs:
     # Autobuild attempts to build any compiled languages  (C/C++, C#, or Java).
     # If this step fails, then you should remove it and run the build manually (see below)
     - name: Setup Go environment
-      uses: actions/setup-go@v2.1.2
+      uses: actions/setup-go@v3
       with:
-        # The Go version to download (if necessary) and use. Supports semver spec and ranges.
         go-version: ${{ matrix.go_version }}
 
     - run: |
        go build -o terraform-provider-discord .
 
     - name: Perform CodeQL Analysis
-      uses: github/codeql-action/analyze@v1
+      uses: github/codeql-action/analyze@v2
